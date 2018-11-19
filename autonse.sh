@@ -21,6 +21,7 @@ description='AutoNSE - Massive NSE Autosploit/Autoscanner'
 exec_command='nmap -T5 -Pn --open -p 21,22,23,25,53'
 exec_command+=",80,443,445,110,123,1521,143,5060,389"
 exec_command+=",1433,2049,3306,5900,27017,5984,12345"
+exec_command+=",502"
 # nmap path 
 nmap_path=$(whereis nmap|awk {'print $3'})
 
@@ -381,6 +382,20 @@ function scan_netbus() {
 	$exec_command
 }
 
+function scan_modbus() {
+        ip=$1; output=$2
+	plus "Loading modbus nse scripts..."
+        search_nse 'modbus'
+        plus "Found $(echo $nse|tr ', ' '\n'|wc -l) scripts..."
+        if [ -n $output ]; then
+                exec_command="nmap -p 502 $output --script=$nse --script-args='modbus-discover.aggressive=true'  $ip"
+        else
+                exec_command="nmap -p 502 --script=$nse --script-args='modbus-discover.aggressive=true'  $ip"
+        fi
+        info "Scanning... Please wait..."
+        $exec_command
+}
+
 function scanner() {
 	ip=$1; port=$2; output=$3
 	if [ $port = "21" ]; then
@@ -413,6 +428,9 @@ function scanner() {
 	if [ $port = "123" ]; then
 		scan_ntp "$ip" "$output"
 	fi
+	if [ $port = "502" ]; then
+                scan_modbus "$ip" "$output"
+        fi
 	if [ $port = "1521" ]; then
 		scan_oracle "$ip" "$output"
 	fi
